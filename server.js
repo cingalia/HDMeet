@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 require('dotenv').config();
 const express = require('express')
-const http = require('http')
+const https = require('https')
 let cors = require('cors')
 const app = express()
 const bodyParser = require('body-parser')
@@ -12,33 +12,37 @@ const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const { authenticateToken } = require('./middleware/Auth');
 
-let server = http.createServer(app)
+const fs = require('fs');
+
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/zakaribel.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/zakaribel.com/cert.pem'),
+  ca: fs.readFileSync('/etc/letsencrypt/live/zakaribel.com/chain.pem'),
+};
+
+const server = https.createServer(options,app);
+
 let io = require('socket.io')(server, {
 	cors: {
-		origin: ["http://localhost:4001", "http://localhost:8000"],
+   		origin: "https://www.zakaribel.com",
 		methods: ["GET", "POST"],
-		credentials: true,
+      	credentials: true
 	}
 });
 
+
 app.use(cors({
-	origin: ["http://localhost:4001", "http://localhost:8000"],
-	methods: ["GET", "POST", "PUT", "DELETE"],
-	credentials: true,
+  origin: "https://www.zakaribel.com",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
 }));
 
-app.use(bodyParser.json())
+app.use(bodyParser.json()); 
 
 
 
-if (process.env.NODE_ENV === 'production') { // mode prod
-	app.use(express.static(__dirname + "/build"))
-	app.get("*", (req, res) => {
-		res.sendFile(path.join(__dirname + "/build/index.html"))
-	})
 
 
-}
 app.set('port', 4001)
 
 sanitizeString = (str) => {
@@ -189,6 +193,8 @@ app.get('/users', (req, res) => {
 				email: sanitizeString(user.email),
 				password: sanitizeString(user.password)
 			}));
+			console.log(sanitizedResults);
+			res.setHeader('Content-Type', 'application/json');
 			res.json(sanitizedResults);
 		}
 	});
@@ -362,7 +368,12 @@ app.post('/login', (req, res) => {
 //verif token
 app.use('/adminPanel', authenticateToken); // "/adminPanel" sera dans ma request dans athenticateToken
 
-
+if (process.env.NODE_ENV === 'production') { // mode prod
+	app.use(express.static(__dirname + "/build"))
+	app.get("*", (req, res) => {
+		res.sendFile(path.join(__dirname + "/build/index.html"))
+	})
+}
 
 server.listen(app.get('port'), () => {
 	console.log("listening on", app.get('port'))

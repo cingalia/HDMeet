@@ -20,7 +20,7 @@ import { Link } from "react-router-dom"
 // attention à faire en sorte qu'il y ait pas de souci avec protocol SSL (ça m'a bien fait chier)
 const server_url =
   process.env.NODE_ENV === "production" 
-    ? "https://zakaribel.com:4001"
+    ? "https://www.zakaribel.com:4001"
     : "http://localhost:4001"
 
 // Pourquoi je déclare ces sortes de states global ?
@@ -82,7 +82,9 @@ class Main extends Component {
     axios
     .get(`${server_url}/users`, { withCredentials: true } )
       .then((response) => {
+        console.log("Here");
         this.setState({ authorizedUsers: response.data })
+        console.log(response.data);
       })
       .catch((error) => {
         console.error(
@@ -793,8 +795,11 @@ createPeerConnection = () =>   {
     let isAuthorized = false
     let isAdmin = false
 
+    // let isAuthorized = true
+    // let isAdmin = true
+
     for (let i = 0; i < authorizedUsers.length; i++) {
-      if (authorizedUsers[i].email === currentUserEmail) {
+      if (authorizedUsers[i].email === currentUserEmail) {      
         isAuthorized = true
         if (authorizedUsers[i].role.includes("ADMIN")) {
           isAdmin = true
