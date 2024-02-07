@@ -24,6 +24,8 @@ const options = {
 const server = https.createServer(options,app);
 
 let io = require('socket.io')(server, {
+	transports: ['websocket', 'polling'],
+    allowEIO3: true,
 	cors: {
    		origin: "https://www.zakaribel.com",
 		methods: ["GET", "POST"],
@@ -55,13 +57,21 @@ let roomUsers = {};
 
 io.on('connection', (socket) => {
 
+	console.log("SID:" + socket.id);
+	
 	socket.on('kick-user', (userId) => {
 		// j'emet l'évent spécifiquement à l'user qui doit être kicked
 		io.to(userId).emit('user-kicked');
-
+		console.log(userId);
 	});
 
 	socket.on('joinCall', (path, username, email) => {
+
+		console.log("Here at join call");
+
+		console.log(path);
+		console.log(username);
+		console.log(email);
 
 		socket.on("refreshingPage", () => {
 			// déco de la room si l'user refresh la page
@@ -75,6 +85,7 @@ io.on('connection', (socket) => {
 		if (connections[path] === undefined) { // sinon il m'enquiquine
 			connections[path] = [];
 		}
+		console.log(connections[path]);
 
 		connections[path].push(socket.id); // je stock des sockets id dans la room . connections va contenir la room et la liste des socket id qui sont dans la room
 

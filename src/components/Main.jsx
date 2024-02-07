@@ -1,6 +1,6 @@
 /* eslint-disable no-lone-blocks */
 /* eslint-disable no-loop-func */
-import React, { Component } from "react"
+import React, { Component, useEffect, useState } from "react"
 import io from "socket.io-client"
 import { Input, Button } from "@material-ui/core"
 import logo from "../assets/hdmlogo.png"
@@ -31,6 +31,7 @@ let connections = {}
 let socket = null
 let socketId = null
 let videoElements = 0
+// const [socket, setSocket] = useState(null)
 
 const peerConnectionConfig = {
   iceServers: [
@@ -82,7 +83,6 @@ class Main extends Component {
     axios
     .get(`${server_url}/users`, { withCredentials: true } )
       .then((response) => {
-        console.log("Here");
         this.setState({ authorizedUsers: response.data })
         console.log(response.data);
       })
@@ -280,10 +280,24 @@ class Main extends Component {
     }
   };
   
-
+  
 serverConnection = () => {
-  socket = io.connect(server_url, { secure: true })
 
+  console.log("Here connecting");
+  
+  // useEffect(() => {
+  //   const newSocket = io.connect(server_url, { secure: true })
+  //   console.log(newSocket);
+  //   setSocket(newSocket)
+
+  //   return socket.disconnect()
+  // }, [])
+
+  // const [socket, setSocket] = useState(io.connect("https://www.zakaribel.com", { secure: true }))
+  
+   socket = io.connect(server_url, { secure: true })
+
+    console.log(server_url);
   // demande de parole
   socket.on("speech-requested", ({ username }) => {
     message.warning({
@@ -301,6 +315,7 @@ serverConnection = () => {
      this.stopTracks()
     });
 
+    console.log(this.state.username);
   socket.emit(
     "joinCall",
     window.location.href,
@@ -311,6 +326,7 @@ serverConnection = () => {
   this.setState({ socketId });
 
   socket.on("update-user-list", (users) => {
+    console.log(users);
     if (users) {
       // si j'fais pas ça il va mdire undefined blablabla
       let updatedUsernames = {}
