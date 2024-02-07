@@ -11,6 +11,7 @@ let xss = require("xss")
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const { authenticateToken } = require('./middleware/Auth');
+let connectionRequest = require('./middleware/ConnectionRequest')
 
 const fs = require('fs');
 
@@ -161,26 +162,15 @@ io.on('connection', (socket) => {
 
 // DDB //
 
-const mysql = require('mysql2');
-
-const connection = mysql.createConnection({
-	host: process.env.DB_HOST,
-	user: process.env.DB_USER,
-	password: process.env.DB_PASSWORD,
-	database: process.env.DB_DATABASE
-});
-
-connection.connect((err) => {
-	if (err) {
-		console.error('Erreur de connexion à la base de données MySQL :', err);
-	} else {
-		console.log('Connecté à la base de données hdmeet');
-	}
-});
+//Test connection
+connection = connectionRequest();
 
 
 app.get('/users', (req, res) => {
 	console.log('Requête vers /users reçue.');
+
+	//Establish the connection on this request
+    connection = connectionRequest();
 
 	connection.query('SELECT * FROM users ORDER BY created_At DESC', (err, results) => {
 		if (err) {
@@ -193,7 +183,6 @@ app.get('/users', (req, res) => {
 				email: sanitizeString(user.email),
 				password: sanitizeString(user.password)
 			}));
-			console.log(sanitizedResults);
 			res.setHeader('Content-Type', 'application/json');
 			res.json(sanitizedResults);
 		}
@@ -235,6 +224,10 @@ app.put('/updateRoles', (req, res) => {
 
 			// à ce stade j'ai  query qui est egal à UPDATE users set role = ? (ce sera newRole) ensuite je concatene ', pasword ?' (ce sera hashedPass)
 			// pareil pour email à la fin de la query. C'est pour ça que l'ordre est important dans queryParams
+
+			//Establish the connection on this request
+			connection = connectionRequest();
+
 			connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
 				if (err) {
 					console.error('Erreur lors de la mise à jour du rôle et du mot de passe de l\'utilisateur :', err);
@@ -251,6 +244,9 @@ app.put('/updateRoles', (req, res) => {
 	} else {
 		// Sinon je met juste à jour son role (si j'ai pas select admin dans le form)
 		console.log("KOUERY : " + query, "queryPaRAMS : " + queryParams)
+		//Establish the connection on this request
+		connection = connectionRequest();
+
 		connection.query(query + ' WHERE email = ?', queryParams, (err, results) => {
 			if (err) {
 				console.error('Erreur lors de la mise à jour du rôle de l\'utilisateur :', err);
@@ -287,6 +283,8 @@ app.post('/insertUser', (req, res) => {
 		}
 
 		const query = 'INSERT INTO users (email, role, password) VALUES (?, ?, ?)';
+		//Establish the connection on this request
+		connection = connectionRequest();
 		connection.query(query, [email, role, hashedPassword], (dbErr) => {
 			if (dbErr) {
 				console.error('Erreur lors de l\'insertion de l\'utilisateur :', dbErr);
@@ -307,6 +305,8 @@ app.delete('/deleteUser/:email', (req, res) => {
 	}
 
 	const query = 'DELETE FROM users WHERE email = ?';
+	//Establish the connection on this request
+	connection = connectionRequest();
 	connection.query(query, [email], (err, results) => {
 		if (err) {
 			console.error('Erreur lors de la suppression de l\'utilisateur :', err);
@@ -334,6 +334,8 @@ app.post('/login', (req, res) => {
 	}
 
 	const query = 'SELECT * FROM users WHERE email = ?';
+	//Establish the connection on this request
+	connection = connectionRequest();
 	connection.query(query, [email], (err, results) => {
 		if (err) {
 			console.error('Erreur lors de la recherche de l\'utilisateur :', err);
